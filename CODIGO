@@ -1,0 +1,90 @@
+#include<iostream>
+#include<vector>
+using namespace std;
+
+const int particion = 32;//lo que debe de medir minimante lo que sobre de la mem
+
+struct bloque
+{
+    int ID;//lugar
+    int tam;//lo que se usa
+    int cuantos;//lo que no
+    int BLOQUE;//tam real mem (si hay sobrante)
+};
+
+vector<bloque>memoria;
+
+//memoria incial antes proceso (0,4096,0)
+void inicioMem(int KB){
+    memoria.clear();
+    memoria.push_back({0,KB,0,KB});
+}
+//insetar procesos con best-fit SI NO existe espacio false
+bool BestFit(int ID,int tam,int cuantos){
+    int mejor=-1;
+    for(int i=0;i<memoria.size();i++){
+        if(memoria[i].ID==0 && memoria[i].BLOQUE>=tam){
+            if(mejor==-1 || memoria[i].BLOQUE<memoria[mejor].BLOQUE){
+                mejor=i;
+            }
+        }
+    }
+    if(mejor==-1){return -1;}//no cabe
+
+    int sobrante=memoria[mejor].BLOQUE-tam;
+
+    if(sobrante>=particion){
+        //// Se parte el hueco: proceso + hueco restante
+        int bloqueOrig=memoria[mejor].BLOQUE;
+        memoria[mejor]={ID,tam,cuantos,tam};
+        bloque hueco={0,bloqueOrig-tam,0,bloqueOrig-tam};
+        memoria.insert(memoria.begin()+mejor+1,hueco);
+    }
+    //Sobrante menor a 32 KB: no se parte, el proceso ocupa todo el hueco
+    else{
+        memoria[mejor].ID=ID;
+        memoria[mejor].tam=tam;
+        memoria[mejor].cuantos=cuantos;
+    }
+    return true;
+}
+
+// Descarga un proceso (cuando su cuanto llega a 0)
+
+bool liberarProceso(int ID) {
+    for (int i=0; i<memoria.size(); i++) {
+        if (memoria[i].ID==ID) {
+            memoria[i].ID=0;
+            memoria[i].tam=memoria[i].BLOQUE;
+            memoria[i].cuantos=0;
+            huecosjuntos();
+            return true;
+        }
+    }
+    return false;
+}
+
+//cuado hay huecos contiguos
+
+void huecosjuntos(){
+    int i=0;
+    while(i+1<memoria.size()){
+         if (memoria[i].ID==0 && memoria[i+1].ID==0) {
+            memoria[i].BLOQUE+=memoria[i+1].BLOQUE;
+            memoria[i].tam=memoria[i].BLOQUE;
+            memoria.erase(memoria.begin()+i+1);
+        } else {
+            i++;
+        }
+    }
+}
+
+void mostrar(){
+     for (int i = 0; i < memoria.size(); i++){
+        cout<<"["<< memoria[i].ID<<","<< memoria[i].tam<<","<< memoria[i].cuantos<< "]"<< endl;
+     }
+}
+
+int main(){
+    
+}
